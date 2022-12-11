@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import os
-import time
 import signal
+import logging
 import argparse
 import datetime
 import threading
@@ -26,21 +26,21 @@ class DiskChecker:
     def run_timer(self) -> None:
         self.timer = threading.Timer(self._period, self._check_disks)
         self.timer.start()
-        print('Setting timer to check disks in {} seconds at {}.'.format(self._period, datetime.datetime.now() + datetime.timedelta(seconds=self._period)))
+        logging.info('Setting timer to check disks in {} seconds at {}.'.format(self._period, datetime.datetime.now() + datetime.timedelta(seconds=self._period)))
 
     def stop_timer(self) -> None:
         self._running = False
         self.timer.cancel()
 
     def exit_gracefully(self, *args) -> None:
-        print('Attempting to exit gracefully...')
+        logging.warn('Attempting to exit gracefully...')
         self.stop_timer()
         self._done_lock.release()
 
     def _check_disks(self) -> None:
-        print('Running disk check at {}'.format(datetime.datetime.now()))
+        logging.info('Running disk check at {}'.format(datetime.datetime.now()))
         for disk in self._disks:
-            print('\tChecking {}'.format(disk))
+            logging.info('\tChecking {}'.format(disk))
         if self._running:
             self.run_timer()
 
@@ -57,8 +57,8 @@ if __name__ == '__main__':
     done_lock = threading.Lock()
     checker = DiskChecker(done_lock, args.period, disks)
 
-    print(f'Disk capacity will be checked every {args.period} hours')
-    print(f'Disks to be monitored: {disks}')
+    logging.info(f'Disk capacity will be checked every {args.period} hours')
+    logging.info(f'Disks to be monitored: {disks}')
 
     checker.run_timer()
     done_lock.acquire()
