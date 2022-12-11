@@ -33,7 +33,7 @@ class DiskChecker:
         self.timer.cancel()
 
     def exit_gracefully(self, *args) -> None:
-        logging.warn('Attempting to exit gracefully...')
+        logging.warning('Attempting to exit gracefully...')
         self.stop_timer()
         self._done_lock.release()
 
