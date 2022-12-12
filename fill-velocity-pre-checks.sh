@@ -22,4 +22,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-python3 /opt/fill-velocity.py -p ${MONITOR_PERIOD} /opt/disks/*
+echo "Ready to run fill-velocity.py"
+
+exit 0
