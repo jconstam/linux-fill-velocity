@@ -26,19 +26,20 @@ class DiskChecker:
     def run_timer(self) -> None:
         self.timer = threading.Timer(self._period, self._check_disks)
         self.timer.start()
-        logging.info('Setting timer to check disks in {} seconds at {}.'.format(self._period, datetime.datetime.now() + datetime.timedelta(seconds=self._period)))
+        now = datetime.datetime.now()
+        logging.info('Current time is {}.  Next check will run in {} seconds at {}'.format(now, self._period, now + datetime.timedelta(seconds=self._period)))
 
     def stop_timer(self) -> None:
         self._running = False
         self.timer.cancel()
 
     def exit_gracefully(self, *args) -> None:
-        logging.warning('Attempting to exit gracefully...')
+        logging.error('Shutting down now.')
         self.stop_timer()
         self._done_lock.release()
 
     def _check_disks(self) -> None:
-        logging.info('Running disk check at {}'.format(datetime.datetime.now()))
+        logging.info('Running disk check now.')
         for disk in self._disks:
             logging.info('\tChecking {}'.format(disk))
         if self._running:
@@ -51,13 +52,15 @@ if __name__ == '__main__':
     parser.add_argument('disks', metavar='D', type=str, nargs='+', help='Paths to disks to be monitored')
     args = parser.parse_args()
 
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s|%(levelname)s|%(message)s')
+
     disks = [os.path.abspath(d) for d in args.disks]
 
     kill_mgr = KillManager()
     done_lock = threading.Lock()
     checker = DiskChecker(done_lock, args.period, disks)
 
-    logging.info(f'Disk capacity will be checked every {args.period} hours')
+    logging.info(f'Disk capacity will be checked every {args.period} seconds.')
     logging.info(f'Disks to be monitored: {disks}')
 
     checker.run_timer()
