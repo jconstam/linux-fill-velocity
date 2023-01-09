@@ -1,3 +1,5 @@
 #!/bin/bash
 
+export DOCKER_BUILDKIT=0
+export COMPOSE_DOCKER_CLI_BUILD=0
 docker build -t jconstam/linux-fill-velocity .

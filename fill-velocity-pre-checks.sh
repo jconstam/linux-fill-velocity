@@ -1,19 +1,16 @@
-#!/bin/sh
+#!/bin/bash
 
-if [ -z "${MONITOR_PERIOD}" ]; then
-    echo "Monitoring period variable MONITOR_PERIOD must be set."
-    exit 1
-fi
+check_vars()
+{
+    var_names=("$@")
+    for var_name in "${var_names[@]}"; do
+        [ -z "${!var_name}" ] && echo "$var_name is unset." && var_unset=true
+    done
+    [ -n "$var_unset" ] && exit 1
+    return 0
+}
 
-if [ -z "${DRIVE_PREFIX}" ]; then
-    echo "Monitoring period variable DRIVE_PREFIX must be set."
-    exit 1
-fi
-
-if [ -z "${TZ}" ]; then
-    echo "Timezone environment variable TZ must be set."
-    exit 1
-fi
+check_vars TZ MONITOR_PERIOD DRIVE_PREFIX INFLUXDB_IPADDR INFLUXDB_PORT INFLUXDB_USERNAME INFLUXDB_PASSWORD INFLUXDB_DATABASENAME
 
 TIMEZONE="/usr/share/zoneinfo/${TZ}"
 if [ ! -e "${TIMEZONE}" ]; then
