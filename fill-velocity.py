@@ -1,27 +1,28 @@
 #!/usr/bin/env python3
 
-import os
 import signal
 import logging
 import argparse
 import datetime
 import threading
+import subprocess
 
 
 class DiskChecker:
-    def __init__(self, period: int, disks: list) -> None:
+    def __init__(self, period: int, drive_prefix: str) -> None:
         self._period = period
-        self._disks = disks
+        self._drive_prefix = drive_prefix
         self._running = True
         self._done_lock = threading.Lock()
         self._done_lock.acquire()
         signal.signal(signal.SIGINT, self._exit_gracefully)
         signal.signal(signal.SIGTERM, self._exit_gracefully)
 
-    def run_timer(self) -> None:
-        self.timer = threading.Timer(self._period, self._check_disks)
+    def run_timer(self, run_now: bool = False) -> None:
+        run_period = 0.1 if run_now else self._period
+        self.timer = threading.Timer(run_period, self._check_disks)
         self.timer.start()
-        logging.info('Next check will run in {} seconds at {}'.format(self._period, datetime.datetime.now() + datetime.timedelta(seconds=self._period)))
+        logging.info('Next check will run in {} seconds at {}'.format(run_period, datetime.datetime.now() + datetime.timedelta(seconds=run_period)))
 
     def stop_timer(self) -> None:
         self._running = False
@@ -37,8 +38,19 @@ class DiskChecker:
 
     def _check_disks(self) -> None:
         logging.info('Running disk check now.')
-        for disk in self._disks:
-            logging.info('\tChecking {}'.format(disk))
+        try:
+            output = subprocess.check_output(['df']).decode()
+        except subprocess.CalledProcessError as e:
+            logging.error('Could not read drive information: {}'.format(e.args))
+            return
+        lines = output.split('\n')
+        for line in lines:
+            line_parts = line.split()
+            if len(line_parts) == 6 and line_parts[0].startswith(self._drive_prefix):
+                name = line_parts[0]
+                total = int(line_parts[1])
+                used = int(line_parts[2])
+                logging.info('\t{}: {}/{} = {:.3f}%'.format(name, used, total, used / total * 100))
         if self._running:
             self.run_timer()
 
@@ -46,17 +58,13 @@ class DiskChecker:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Fill Velocity Monitor')
     parser.add_argument('-p', '--period', type=int, required=True, help='Monitoring period in seconds')
-    parser.add_argument('disks', metavar='D', type=str, nargs='+', help='Paths to disks to be monitored')
+    parser.add_argument('-d', '--drive_prefix', type=str, required=True, help='Prefix for drives to measure')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format='%(asctime)s|%(levelname)s|%(message)s')
 
-    disks = [os.path.abspath(d) for d in args.disks]
+    logging.info(f'Disk capacity for drives starting with "{args.drive_prefix}" will be checked every {args.period} seconds.')
 
-    logging.info(f'Disk capacity will be checked every {args.period} seconds.')
-    logging.info(f'Disks to be monitored: {disks}')
-
-    checker = DiskChecker(args.period, disks)
-
-    checker.run_timer()
+    checker = DiskChecker(args.period, args.drive_prefix)
+    checker.run_timer(True)
     checker.wait_for_done()

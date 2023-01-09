@@ -4,7 +4,7 @@ docker run \
     --rm \
     --name fill-velocity \
     -e MONITOR_PERIOD=20 \
+    -e DRIVE_PREFIX="/dev/sd" \
     -e TZ=America/Edmonton \
-    -v /mnt/c:/opt/disks/c \
-    -v /mnt/wsl:/opt/disks/wsl \
+    -v /mnt:/opt/disks \
     jconstam/linux-fill-velocity

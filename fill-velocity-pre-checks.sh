@@ -5,6 +5,11 @@ if [ -z "${MONITOR_PERIOD}" ]; then
     exit 1
 fi
 
+if [ -z "${DRIVE_PREFIX}" ]; then
+    echo "Monitoring period variable DRIVE_PREFIX must be set."
+    exit 1
+fi
+
 if [ -z "${TZ}" ]; then
     echo "Timezone environment variable TZ must be set."
     exit 1
